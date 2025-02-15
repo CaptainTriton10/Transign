@@ -1,3 +1,8 @@
+import os
+
+# Suppress TensorFlow warnings
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
+
 print("Loading dependencies")
 import customtkinter as ctk
 from PIL import Image
