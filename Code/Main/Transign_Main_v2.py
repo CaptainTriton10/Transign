@@ -1,4 +1,4 @@
-print("Loading dependancies")
+print("Loading dependencies")
 import customtkinter as ctk
 from PIL import Image
 import mediapipe as mp
@@ -19,15 +19,14 @@ GLOBAL_PADY = 15
 MAX_REPS = 50
 
 # .task model path
-MODEL_PATH = r"Models\asl_model_v3.task"
+MODEL_PATH = r"C:\Computing\Transign\Models\asl_model_v3.task"
 
 with open(MODEL_PATH, "rb") as file:
     model = file.read()
 
-# Gets the letter from an mp_image
+# Gets the letter from a mp_image
 def GetLetter(result, output_image, timestamp_ms):
-    print(result)
-    if result != None:
+    if result is not None:
         for gesture in result.gestures:
             prediction = [category.category_name for category in gesture]
             if len(prediction) >= 1:
@@ -71,7 +70,7 @@ class WebcamFrame(ctk.CTkFrame):
         super().__init__(master, width, height)
 
         # Label that is used to show image
-        # Wierdly, it is not an image, but a label with the text set to ""
+        # Weirdly, it is not an image, but a label with the text set to ""
         self.cam = ctk.CTkLabel(self, text="", font=("TkDefaultFont", 56))
         self.cam.grid(row=0, column=0, padx=GLOBAL_PADX, pady=GLOBAL_PADY, sticky="nsew")
 
@@ -93,10 +92,10 @@ class OptionsFrame(ctk.CTkFrame):
         self.webcam_button.grid(row=0, column=0, padx=GLOBAL_PADX, pady=GLOBAL_PADY, sticky="ew")
 
         # Label for sense_slider
-        self.sense_label = ctk.CTkLabel(self, text="Sensetivity")
+        self.sense_label = ctk.CTkLabel(self, text="Sensitivity")
         self.sense_label.grid(row=2, column=0, padx=GLOBAL_PADX, pady=(0, GLOBAL_PADY), sticky="ew")
 
-        # Slider for controlling repetition sensetivity
+        # Slider for controlling repetition sensitivity
         self.sense_slider = ctk.CTkSlider(self, number_of_steps=MAX_REPS)
         self.sense_slider.grid(row=3, column=0, padx=GLOBAL_PADX, pady=(0, GLOBAL_PADY), sticky="ew")
 
@@ -108,7 +107,7 @@ class OutputFrame(ctk.CTkFrame):
         # Literally just a font
         output_font = ctk.CTkFont(family="TkDefaultFont", size=56, weight="bold")
         
-        # Label for showing recognitioin output
+        # Label for showing recognition output
         self.output = ctk.CTkLabel(self, text="", font=output_font, wraplength=900)
         self.output.grid(row=0, column=0, padx=GLOBAL_PADX, pady=GLOBAL_PADY, sticky="ew")
 
