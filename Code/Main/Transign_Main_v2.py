@@ -9,7 +9,6 @@ from PIL import Image
 import mediapipe as mp
 import cv2 as cv
 import numpy as np
-import time
 import threading
 
 # Webcam image size
@@ -24,7 +23,7 @@ GLOBAL_PADY = 15
 MAX_REPS = 50
 
 # .task model path
-MODEL_PATH = r"C:\Computing\Transign\Models\asl_model_v3.task"
+MODEL_PATH = r"Models\asl_model_v3.task"
 
 with open(MODEL_PATH, "rb") as file:
     model = file.read()
@@ -164,10 +163,13 @@ class App(ctk.CTk):
             self.webcam_frame.cam.configure(text="")
             self.options_frame.webcam_button.configure(text="Stop Webcam")
             self.cap = cv.VideoCapture(1)
-            
+
+            # Creates a separate thread for getting the webcam, so the GUI isn't blocked
             self.t_frame_loop = threading.Thread(target=self.UpdateFrame, daemon=True)
             self.t_frame_loop.start()
+
         else:
+            # Stops webcam + changes text
             self.is_running = False
             self.webcam_frame.cam.configure(text="Webcam Stopped")
             self.options_frame.webcam_button.configure(text="Start Webcam")
@@ -175,33 +177,44 @@ class App(ctk.CTk):
 
     def UpdateFrame(self):
         while self.cap.isOpened():
+            # Gets image from camera
             ret, frame = self.cap.read()
 
             if ret:
+                # Increments timestamp and updates number of repetitions needed from slider
                 self.timestamp += 1
                 self.reps_needed = int(((1 - self.options_frame.sense_slider.get()) * MAX_REPS) + 1)
 
+                # RGB image from frame and array from RGB image
                 image_rgb = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
                 image = Image.fromarray(image_rgb)
-                
+
+                # Converts frame to a mediapipe image to be processed by the recogniser
                 mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=np.array(frame))
 
+                # Runs the recogniser asynchronously using the mp_image and frame number (timestamp)
                 self.recogniser.recognize_async(mp_image, self.timestamp)
 
+                # Updates the GUI using the image array using self.after to avoid blocking the main thread
                 self.after(0, self.UpdateGUI, image)
 
     def UpdateGUI(self, image):
+        # Updates the webcam label
         self.ctk_image = ctk.CTkImage(light_image=image, dark_image=image, size=(IMG_WIDTH, IMG_HEIGHT))
         self.webcam_frame.cam.configure(image=self.ctk_image)
 
     def UpdateLetter(self, letter):
+        # Increments reps if the last letter is the same as the current letter
         if letter == self.previous_letter:
             self.reps += 1
             self.webcam_frame.progress.set(self.reps / self.reps_needed)
+
+        # Resets reps count if the last letter isn't the same as the current letter
         else:
             self.reps = 0
             self.webcam_frame.progress.set(0)
 
+        # When the number of reps reaches the threshold, add it to the phrase and updates the output text
         if self.reps >= self.reps_needed:
             self.phrase += letter
             self.output_frame.output.configure(text=self.phrase)
@@ -209,9 +222,11 @@ class App(ctk.CTk):
             self.webcam_frame.progress.set(0)
 
         self.previous_letter = letter
-    
+
+# Creates the app class and starts the webcam
 app = App()
 app.ToggleWebcam()
 app.mainloop()
 
+# Releases the webcam once the program terminates
 app.cap.release()
