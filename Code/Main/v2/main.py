@@ -3,6 +3,7 @@ import os
 # Suppress TensorFlow warnings
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
+# Package dependencies
 print("Loading dependencies")
 import customtkinter as ctk
 from PIL import Image
@@ -11,24 +12,19 @@ import cv2 as cv
 import numpy as np
 import threading
 
-# Webcam numbers
-CAM_NUMBERS = [
-    "0",
-    "1",
-    "2",
-    "3"
-]
-
-# Webcam image size
-IMG_WIDTH = 480
-IMG_HEIGHT = 360
-
-# Padding for all widgets
-GLOBAL_PADX = 15
-GLOBAL_PADY = 15
-
-# Max number of reps needed (Upper slider limit)
-MAX_REPS = 50
+GLOBALS = {
+    "IMG_WIDTH" : 480,
+    "IMG_HEIGHT" : 360,
+    "GLOBAL_PADX" : 15,
+    "GLOBAL_PADY" : 15,
+    "MAX_REPS" : 50,
+    "CAM_NUMBERS" : [
+        "0",
+        "1",
+        "2",
+        "3"
+    ]
+}
 
 # .task model path
 MODEL_PATH = r"Models\asl_model_v3.task"
@@ -92,17 +88,17 @@ def ChangeWebcamNumber(choice):
 
 # Class for webcam image/label within the frame
 class WebcamFrame(ctk.CTkFrame):
-    def __init__(self, master, width=IMG_WIDTH, height=IMG_HEIGHT):
+    def __init__(self, master, width=GLOBALS["IMG_WIDTH"], height=GLOBALS["IMG_HEIGHT"]):
         super().__init__(master, width, height)
 
         # Label that is used to show image
         # Weirdly, it is not an image, but a label with the text set to ""
         self.cam = ctk.CTkLabel(self, text="", font=("TkDefaultFont", 56))
-        self.cam.grid(row=0, column=0, padx=GLOBAL_PADX, pady=GLOBAL_PADY, sticky="nsew")
+        self.cam.grid(row=0, column=0, padx=GLOBALS["GLOBAL_PADX"], pady=GLOBALS["GLOBAL_PADY"], sticky="nsew")
 
         # Progress bar to show current number of reps
         self.progress = ctk.CTkProgressBar(self)
-        self.progress.grid(row=1, column=0, padx=GLOBAL_PADX, pady=(0, GLOBAL_PADY), sticky="ew")
+        self.progress.grid(row=1, column=0, padx=GLOBALS["GLOBAL_PADX"], pady=(0, GLOBALS["GLOBAL_PADY"]), sticky="ew")
         self.progress.set(0)
 
 
@@ -115,24 +111,21 @@ class OptionsFrame(ctk.CTkFrame):
         self.columnconfigure(0, weight=1)
 
         # Button to toggle webcam
-        self.webcam_button = ctk.CTkButton(self, text="Start Webcam", height=42,
-                                           command=lambda: App.ToggleWebcam(master))
-        self.webcam_button.grid(row=0, column=0, padx=GLOBAL_PADX, pady=GLOBAL_PADY, sticky="ew")
+        self.webcam_button = ctk.CTkButton(self, text="Start Webcam", height=42, command=lambda: App.ToggleWebcam(master))
+        self.webcam_button.grid(row=0, column=0, padx=GLOBALS["GLOBAL_PADX"], pady=GLOBALS["GLOBAL_PADY"], sticky="ew")
 
         # Label for sense_slider
         self.sense_label = ctk.CTkLabel(self, text="Sensitivity")
-        self.sense_label.grid(row=3, column=0, padx=GLOBAL_PADX, pady=(0, GLOBAL_PADY), sticky="ew")
+        self.sense_label.grid(row=3, column=0, padx=GLOBALS["GLOBAL_PADX"], pady=(0, GLOBALS["GLOBAL_PADY"]), sticky="ew")
 
         # Slider for controlling repetition sensitivity
-        self.sense_slider = ctk.CTkSlider(self, number_of_steps=MAX_REPS)
-        self.sense_slider.grid(row=4, column=0, padx=GLOBAL_PADX, pady=(0, GLOBAL_PADY), sticky="ew")
+        self.sense_slider = ctk.CTkSlider(self, number_of_steps=GLOBALS["MAX_REPS"])
+        self.sense_slider.grid(row=4, column=0, padx=GLOBALS["GLOBAL_PADX"], pady=(0, GLOBALS["GLOBAL_PADY"]), sticky="ew")
 
         # Option box for selecting webcam
-        self.webcam_number = ctk.StringVar(value=CAM_NUMBERS[1])
-        self.webcam_options = ctk.CTkOptionMenu(self, values=CAM_NUMBERS, variable=self.webcam_number,
-                                                command=ChangeWebcamNumber)
-        self.webcam_options.grid(row=2, column=0, padx=GLOBAL_PADX, pady=(0, GLOBAL_PADY), sticky="ew")
-
+        self.webcam_number = ctk.StringVar(value=GLOBALS["CAM_NUMBERS"][1])
+        self.webcam_options = ctk.CTkOptionMenu(self, values=GLOBALS["CAM_NUMBERS"], variable=self.webcam_number, command=ChangeWebcamNumber)
+        self.webcam_options.grid(row=2, column=0, padx=GLOBALS["GLOBAL_PADX"], pady=(0, GLOBALS["GLOBAL_PADY"]), sticky="ew")
 
 # Class for showing output text
 class OutputFrame(ctk.CTkFrame):
@@ -144,7 +137,11 @@ class OutputFrame(ctk.CTkFrame):
 
         # Label for showing recognition output
         self.output = ctk.CTkLabel(self, text="", font=output_font, wraplength=900)
-        self.output.grid(row=0, column=0, padx=GLOBAL_PADX, pady=GLOBAL_PADY, sticky="ew")
+        self.output.grid(row=0, column=0, padx=GLOBALS["GLOBAL_PADX"], pady=GLOBALS["GLOBAL_PADY"], sticky="ew")
+
+
+class WebcamTab(ctk.CTkTabview):
+    pass
 
 
 # Main app class
@@ -156,7 +153,7 @@ class App(ctk.CTk):
         self.recogniser = GestureRecognizer.create_from_options(options)
 
         # Creates window size and title
-        self.geometry("1080x960")
+        self.geometry("1080x720")
         self.title("Transign")
 
         # Configure rows and columns
@@ -165,15 +162,15 @@ class App(ctk.CTk):
 
         # Frame for webcam image
         self.webcam_frame = WebcamFrame(self)
-        self.webcam_frame.grid(row=0, column=0, padx=GLOBAL_PADX, pady=GLOBAL_PADY, sticky="nsew")
+        self.webcam_frame.grid(row=0, column=0, padx=GLOBALS["GLOBAL_PADX"], pady=GLOBALS["GLOBAL_PADY"], sticky="nsew")
 
         # Frame for options
         self.options_frame = OptionsFrame(self)
-        self.options_frame.grid(row=0, column=1, padx=(0, GLOBAL_PADX), pady=GLOBAL_PADY, sticky="nsew")
+        self.options_frame.grid(row=0, column=1, padx=(0, GLOBALS["GLOBAL_PADX"]), pady=GLOBALS["GLOBAL_PADY"], sticky="nsew")
 
         # Frame for output text
         self.output_frame = OutputFrame(self)
-        self.output_frame.grid(row=1, column=0, padx=GLOBAL_PADX, pady=(0, GLOBAL_PADY), sticky="nsew", columnspan=2)
+        self.output_frame.grid(row=1, column=0, padx=GLOBALS["GLOBAL_PADX"], pady=(0, GLOBALS["GLOBAL_PADY"]), sticky="nsew", columnspan=2)
 
         # Variables for update loop
         self.previous_letter = ""
@@ -215,7 +212,7 @@ class App(ctk.CTk):
             if ret:
                 # Increments timestamp and updates number of repetitions needed from slider
                 self.timestamp += 1
-                self.reps_needed = int(((1 - self.options_frame.sense_slider.get()) * MAX_REPS) + 1)
+                self.reps_needed = int(((1 - self.options_frame.sense_slider.get()) * GLOBALS["MAX_REPS"]) + 1)
 
                 # RGB image from frame and array from RGB image
                 image_rgb = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
@@ -232,7 +229,7 @@ class App(ctk.CTk):
 
     def UpdateGUI(self, image):
         # Updates the webcam label
-        self.ctk_image = ctk.CTkImage(light_image=image, dark_image=image, size=(IMG_WIDTH, IMG_HEIGHT))
+        self.ctk_image = ctk.CTkImage(light_image=image, dark_image=image, size=(GLOBALS["IMG_WIDTH"], GLOBALS["IMG_HEIGHT"]))
         self.webcam_frame.cam.configure(image=self.ctk_image)
 
     def UpdateLetter(self, letter):
