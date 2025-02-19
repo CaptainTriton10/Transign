@@ -11,6 +11,14 @@ import cv2 as cv
 import numpy as np
 import threading
 
+# Webcam numbers
+CAM_NUMBERS = [
+    "0",
+    "1",
+    "2",
+    "3"
+]
+
 # Webcam image size
 IMG_WIDTH = 480
 IMG_HEIGHT = 360
@@ -28,6 +36,7 @@ MODEL_PATH = r"Models\asl_model_v3.task"
 with open(MODEL_PATH, "rb") as file:
     model = file.read()
 
+
 # Gets the letter from a mp_image
 def GetLetter(result, output_image, timestamp_ms):
     if result is not None:
@@ -36,11 +45,12 @@ def GetLetter(result, output_image, timestamp_ms):
             if len(prediction) >= 1:
                 if prediction[0] == "space":
                     app.after(0, app.UpdateLetter, " ")
-                    
+
                 else:
                     # Ensures the gui is updated in main thread (I think)
                     # Honestly I don't know why it works, it just does
                     app.after(0, app.UpdateLetter, prediction[0])
+
 
 # Prerequisites for mediapipe gesture recognition
 BaseOptions = mp.tasks.BaseOptions
@@ -53,12 +63,14 @@ VisionRunningMode = mp.tasks.vision.RunningMode
 options = GestureRecognizerOptions(
     base_options=BaseOptions(model_asset_buffer=model),
     running_mode=VisionRunningMode.LIVE_STREAM,
-    result_callback=GetLetter)
+    result_callback=GetLetter
+)
+
 
 # Unused, but crops image to hand with an offset
 def CropToBounds(image, x_landmarks, y_landmarks):
     offset = 40
-    
+
     # Gets pixel values of edge crops with added offset
     left = int(min(x_landmarks) * 640) - offset
     right = int(max(x_landmarks) * 640) + offset
@@ -67,6 +79,16 @@ def CropToBounds(image, x_landmarks, y_landmarks):
 
     cropped_image = image.crop((left, upper, right, bottom))
     return cropped_image
+
+
+def ChangeWebcamNumber(choice):
+    try:
+        app.cap = cv.VideoCapture(int(choice))
+
+    except Exception as e:
+        print("Something went wrong:", e)
+        print(choice)
+
 
 # Class for webcam image/label within the frame
 class WebcamFrame(ctk.CTkFrame):
@@ -83,6 +105,7 @@ class WebcamFrame(ctk.CTkFrame):
         self.progress.grid(row=1, column=0, padx=GLOBAL_PADX, pady=(0, GLOBAL_PADY), sticky="ew")
         self.progress.set(0)
 
+
 # Class for frame containing options for webcam/recogniser
 class OptionsFrame(ctk.CTkFrame):
     def __init__(self, master):
@@ -92,28 +115,37 @@ class OptionsFrame(ctk.CTkFrame):
         self.columnconfigure(0, weight=1)
 
         # Button to toggle webcam
-        self.webcam_button = ctk.CTkButton(self, text="Start Webcam", height=42, command=lambda: App.ToggleWebcam(master))
+        self.webcam_button = ctk.CTkButton(self, text="Start Webcam", height=42,
+                                           command=lambda: App.ToggleWebcam(master))
         self.webcam_button.grid(row=0, column=0, padx=GLOBAL_PADX, pady=GLOBAL_PADY, sticky="ew")
 
         # Label for sense_slider
         self.sense_label = ctk.CTkLabel(self, text="Sensitivity")
-        self.sense_label.grid(row=2, column=0, padx=GLOBAL_PADX, pady=(0, GLOBAL_PADY), sticky="ew")
+        self.sense_label.grid(row=3, column=0, padx=GLOBAL_PADX, pady=(0, GLOBAL_PADY), sticky="ew")
 
         # Slider for controlling repetition sensitivity
         self.sense_slider = ctk.CTkSlider(self, number_of_steps=MAX_REPS)
-        self.sense_slider.grid(row=3, column=0, padx=GLOBAL_PADX, pady=(0, GLOBAL_PADY), sticky="ew")
+        self.sense_slider.grid(row=4, column=0, padx=GLOBAL_PADX, pady=(0, GLOBAL_PADY), sticky="ew")
+
+        # Option box for selecting webcam
+        self.webcam_number = ctk.StringVar(value=CAM_NUMBERS[1])
+        self.webcam_options = ctk.CTkOptionMenu(self, values=CAM_NUMBERS, variable=self.webcam_number,
+                                                command=ChangeWebcamNumber)
+        self.webcam_options.grid(row=2, column=0, padx=GLOBAL_PADX, pady=(0, GLOBAL_PADY), sticky="ew")
+
 
 # Class for showing output text
 class OutputFrame(ctk.CTkFrame):
     def __init__(self, master):
         super().__init__(master)
-        
+
         # Literally just a font
         output_font = ctk.CTkFont(family="TkDefaultFont", size=56, weight="bold")
-        
+
         # Label for showing recognition output
         self.output = ctk.CTkLabel(self, text="", font=output_font, wraplength=900)
         self.output.grid(row=0, column=0, padx=GLOBAL_PADX, pady=GLOBAL_PADY, sticky="ew")
+
 
 # Main app class
 class App(ctk.CTk):
@@ -126,11 +158,11 @@ class App(ctk.CTk):
         # Creates window size and title
         self.geometry("1080x960")
         self.title("Transign")
-        
+
         # Configure rows and columns
         self.columnconfigure(1, weight=1)
         self.rowconfigure(1, weight=1)
-        
+
         # Frame for webcam image
         self.webcam_frame = WebcamFrame(self)
         self.webcam_frame.grid(row=0, column=0, padx=GLOBAL_PADX, pady=GLOBAL_PADY, sticky="nsew")
@@ -142,7 +174,7 @@ class App(ctk.CTk):
         # Frame for output text
         self.output_frame = OutputFrame(self)
         self.output_frame.grid(row=1, column=0, padx=GLOBAL_PADX, pady=(0, GLOBAL_PADY), sticky="nsew", columnspan=2)
-        
+
         # Variables for update loop
         self.previous_letter = ""
         self.reps = 0
@@ -156,13 +188,13 @@ class App(ctk.CTk):
     def ToggleWebcam(self):
         # If the webcam isn't running, set it to running,
         if not self.is_running:
-            print(self.timestamp)
+            # Starts webcam
             self.is_running = True
 
             # Clear the text from the webcam label
             self.webcam_frame.cam.configure(text="")
             self.options_frame.webcam_button.configure(text="Stop Webcam")
-            self.cap = cv.VideoCapture(1)
+            self.cap = cv.VideoCapture(int(self.options_frame.webcam_number.get()))
 
             # Creates a separate thread for getting the webcam, so the GUI isn't blocked
             self.t_frame_loop = threading.Thread(target=self.UpdateFrame, daemon=True)
@@ -222,6 +254,7 @@ class App(ctk.CTk):
             self.webcam_frame.progress.set(0)
 
         self.previous_letter = letter
+
 
 # Creates the app class and starts the webcam
 app = App()
