@@ -1,16 +1,25 @@
 import os
+import time
 
 # Suppress TensorFlow warnings
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
 # Package dependencies
 print("Loading dependencies")
+start_time = time.time()
+
 import customtkinter as ctk
 from PIL import Image
 import mediapipe as mp
 import cv2 as cv
 import numpy as np
 import threading
+
+print(f"Done! [{round(time.time() - start_time, 3)}s elapsed]")
+
+# TODO: Clear button
+# TODO: Cursor
+# TODO: Tabs - [settings, learn, translation]
 
 GLOBALS = {
     "IMG_WIDTH" : 480,
@@ -114,18 +123,23 @@ class OptionsFrame(ctk.CTkFrame):
         self.webcam_button = ctk.CTkButton(self, text="Start Webcam", height=42, command=lambda: App.ToggleWebcam(master))
         self.webcam_button.grid(row=0, column=0, padx=GLOBALS["GLOBAL_PADX"], pady=GLOBALS["GLOBAL_PADY"], sticky="ew")
 
-        # Label for sense_slider
-        self.sense_label = ctk.CTkLabel(self, text="Sensitivity")
-        self.sense_label.grid(row=3, column=0, padx=GLOBALS["GLOBAL_PADX"], pady=(0, GLOBALS["GLOBAL_PADY"]), sticky="ew")
-
-        # Slider for controlling repetition sensitivity
-        self.sense_slider = ctk.CTkSlider(self, number_of_steps=GLOBALS["MAX_REPS"])
-        self.sense_slider.grid(row=4, column=0, padx=GLOBALS["GLOBAL_PADX"], pady=(0, GLOBALS["GLOBAL_PADY"]), sticky="ew")
-
         # Option box for selecting webcam
         self.webcam_number = ctk.StringVar(value=GLOBALS["CAM_NUMBERS"][1])
         self.webcam_options = ctk.CTkOptionMenu(self, values=GLOBALS["CAM_NUMBERS"], variable=self.webcam_number, command=ChangeWebcamNumber)
-        self.webcam_options.grid(row=2, column=0, padx=GLOBALS["GLOBAL_PADX"], pady=(0, GLOBALS["GLOBAL_PADY"]), sticky="ew")
+        self.webcam_options.grid(row=1, column=0, padx=GLOBALS["GLOBAL_PADX"], pady=(0, GLOBALS["GLOBAL_PADY"]), sticky="ew")
+
+        # Label for sense_slider
+        self.sense_label = ctk.CTkLabel(self, text="Sensitivity")
+        self.sense_label.grid(row=2, column=0, padx=GLOBALS["GLOBAL_PADX"], pady=(0, GLOBALS["GLOBAL_PADY"]), sticky="ew")
+
+        # Slider for controlling repetition sensitivity
+        self.sense_slider = ctk.CTkSlider(self, number_of_steps=GLOBALS["MAX_REPS"])
+        self.sense_slider.grid(row=3, column=0, padx=GLOBALS["GLOBAL_PADX"], pady=(0, GLOBALS["GLOBAL_PADY"]), sticky="ew")
+
+        # Button for clearing
+        self.clear_button = ctk.CTkButton(self, text="Clear", height=42, command=lambda: App.ClearOutput(master))
+        self.clear_button.grid(row=4, column=0, padx=GLOBALS["GLOBAL_PADX"], pady=(0, GLOBALS["GLOBAL_PADY"]), sticky="nsew")
+
 
 # Class for showing output text
 class OutputFrame(ctk.CTkFrame):
@@ -251,6 +265,14 @@ class App(ctk.CTk):
             self.webcam_frame.progress.set(0)
 
         self.previous_letter = letter
+
+    def ClearOutput(self):
+        # Clear all variables
+        self.phrase = ""
+        self.reps = 0
+        self.webcam_frame.progress.set(0)
+
+        self.output_frame.output.configure(text="")
 
 
 # Creates the app class and starts the webcam
