@@ -17,9 +17,6 @@ import threading
 
 print(f"Done! [{round(time.time() - start_time, 3)}s elapsed]")
 
-# TODO: Cursor
-# TODO: Tabs - [settings, learn, translation]
-
 GLOBALS = {
     "IMG_WIDTH" : 480,
     "IMG_HEIGHT" : 360,
@@ -33,6 +30,10 @@ GLOBALS = {
         "2",
         "3"
     ]
+}
+
+COLOURS = {
+    "MED_GREY" : "#383c3c"
 }
 
 # .task model path
@@ -97,8 +98,8 @@ def ChangeWebcamNumber(choice):
 
 # Class for webcam image/label within the frame
 class WebcamFrame(ctk.CTkFrame):
-    def __init__(self, master, width=GLOBALS["IMG_WIDTH"], height=GLOBALS["IMG_HEIGHT"]):
-        super().__init__(master, width, height)
+    def __init__(self, master, width=GLOBALS["IMG_WIDTH"], height=GLOBALS["IMG_HEIGHT"], fg_color=COLOURS["MED_GREY"]):
+        super().__init__(master, width, height, fg_color=COLOURS["MED_GREY"])
 
         # Label that is used to show image
         # Weirdly, it is not an image, but a label with the text set to ""
@@ -113,14 +114,14 @@ class WebcamFrame(ctk.CTkFrame):
 
 # Class for frame containing options for webcam/recogniser
 class OptionsFrame(ctk.CTkFrame):
-    def __init__(self, master):
-        super().__init__(master)
+    def __init__(self, master, fg_color=COLOURS["MED_GREY"]):
+        super().__init__(master, fg_color=COLOURS["MED_GREY"])
 
         # Configure rows and columns expanding
         self.columnconfigure(0, weight=1)
 
         # Button to toggle webcam
-        self.webcam_button = ctk.CTkButton(self, text="Start Webcam", height=42, command=lambda: App.ToggleWebcam(master))
+        self.webcam_button = ctk.CTkButton(self, text="Start Webcam", height=42, command=lambda: App.ToggleWebcam(app))
         self.webcam_button.grid(row=0, column=0, padx=GLOBALS["PADX"], pady=GLOBALS["PADY"], sticky="ew")
 
         # Option box for selecting webcam
@@ -137,14 +138,14 @@ class OptionsFrame(ctk.CTkFrame):
         self.sense_slider.grid(row=3, column=0, padx=GLOBALS["PADX"], pady=(0, GLOBALS["PADY"]), sticky="ew")
 
         # Button for clearing
-        self.clear_button = ctk.CTkButton(self, text="Clear", height=42, command=lambda: App.ClearOutput(master))
+        self.clear_button = ctk.CTkButton(self, text="Clear", height=42, command=lambda: App.ClearOutput(app))
         self.clear_button.grid(row=4, column=0, padx=GLOBALS["PADX"], pady=(0, GLOBALS["PADY"]), sticky="nsew")
 
 
 # Class for showing output text
 class OutputFrame(ctk.CTkFrame):
-    def __init__(self, master):
-        super().__init__(master)
+    def __init__(self, master, fg_color=COLOURS["MED_GREY"]):
+        super().__init__(master, fg_color=COLOURS["MED_GREY"])
 
         # Literally just a font
         output_font = ctk.CTkFont(family="TkDefaultFont", size=56, weight="bold")
@@ -154,8 +155,24 @@ class OutputFrame(ctk.CTkFrame):
         self.output.grid(row=0, column=0, padx=GLOBALS["PADX"], pady=GLOBALS["PADY"], sticky="ew")
 
 
-class WebcamTab(ctk.CTkTabview):
-    pass
+class Tabs(ctk.CTkTabview):
+    def __init__(self, master):
+        super().__init__(master)
+
+        # Tab objects
+        self.webcam_tab = self.add("Webcam")
+
+        # Frame for webcam image
+        self.webcam_frame = WebcamFrame(self.webcam_tab)
+        self.webcam_frame.grid(row=0, column=0, padx=GLOBALS["PADX"], pady=GLOBALS["PADY"], sticky="nsew")
+
+        # Frame for options
+        self.options_frame = OptionsFrame(self.webcam_tab)
+        self.options_frame.grid(row=0, column=1, padx=(0, GLOBALS["PADX"]), pady=GLOBALS["PADY"], sticky="nsew")
+
+        # Frame for output text
+        self.output_frame = OutputFrame(self.webcam_tab)
+        self.output_frame.grid(row=1, column=0, padx=GLOBALS["PADX"], pady=(0, GLOBALS["PADY"]), sticky="nsew", columnspan=2)
 
 
 # Main app class
@@ -174,17 +191,9 @@ class App(ctk.CTk):
         self.columnconfigure(1, weight=1)
         self.rowconfigure(1, weight=1)
 
-        # Frame for webcam image
-        self.webcam_frame = WebcamFrame(self)
-        self.webcam_frame.grid(row=0, column=0, padx=GLOBALS["PADX"], pady=GLOBALS["PADY"], sticky="nsew")
-
-        # Frame for options
-        self.options_frame = OptionsFrame(self)
-        self.options_frame.grid(row=0, column=1, padx=(0, GLOBALS["PADX"]), pady=GLOBALS["PADY"], sticky="nsew")
-
-        # Frame for output text
-        self.output_frame = OutputFrame(self)
-        self.output_frame.grid(row=1, column=0, padx=GLOBALS["PADX"], pady=(0, GLOBALS["PADY"]), sticky="nsew", columnspan=2)
+        # CTkTabView for page tabs
+        self.tabs = Tabs(self)
+        self.tabs.pack(expand=True)
 
         # Variables for update loop
         self.previous_letter = ""
@@ -192,7 +201,7 @@ class App(ctk.CTk):
         self.cap = None
         self.phrase = ""
         self.is_running = False
-        self.reps_needed = 15
+        self.reps_needed = 20
         self.timestamp = 0
 
     # Toggles webcam
@@ -203,9 +212,9 @@ class App(ctk.CTk):
             self.is_running = True
 
             # Clear the text from the webcam label
-            self.webcam_frame.cam.configure(text="")
-            self.options_frame.webcam_button.configure(text="Stop Webcam")
-            self.cap = cv.VideoCapture(int(self.options_frame.webcam_number.get()))
+            self.tabs.webcam_frame.cam.configure(text="")
+            self.tabs.options_frame.webcam_button.configure(text="Stop Webcam")
+            self.cap = cv.VideoCapture(int(self.tabs.options_frame.webcam_number.get()))
 
             # Creates a separate thread for getting the webcam, so the GUI isn't blocked
             self.t_frame_loop = threading.Thread(target=self.UpdateFrame, daemon=True)
@@ -214,8 +223,8 @@ class App(ctk.CTk):
         else:
             # Stops webcam + changes text
             self.is_running = False
-            self.webcam_frame.cam.configure(text="Webcam Stopped")
-            self.options_frame.webcam_button.configure(text="Start Webcam")
+            self.tabs.webcam_frame.cam.configure(text="Webcam Stopped")
+            self.tabs.options_frame.webcam_button.configure(text="Start Webcam")
             self.cap.release()
 
     def UpdateFrame(self):
@@ -226,7 +235,7 @@ class App(ctk.CTk):
             if ret:
                 # Increments timestamp and updates number of repetitions needed from slider
                 self.timestamp += 1
-                self.reps_needed = int(((1 - self.options_frame.sense_slider.get()) * GLOBALS["MAX_REPS"]) + 1)
+                self.reps_needed = int(((1 - self.tabs.options_frame.sense_slider.get()) * GLOBALS["MAX_REPS"]) + 1)
 
                 # RGB image from frame and array from RGB image
                 image_rgb = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
@@ -244,25 +253,25 @@ class App(ctk.CTk):
     def UpdateGUI(self, image):
         # Updates the webcam label
         self.ctk_image = ctk.CTkImage(light_image=image, dark_image=image, size=(GLOBALS["IMG_WIDTH"], GLOBALS["IMG_HEIGHT"]))
-        self.webcam_frame.cam.configure(image=self.ctk_image)
+        self.tabs.webcam_frame.cam.configure(image=self.ctk_image)
 
     def UpdateLetter(self, letter):
         # Increments reps if the last letter is the same as the current letter
         if letter == self.previous_letter:
             self.reps += 1
-            self.webcam_frame.progress.set(self.reps / self.reps_needed)
+            self.tabs.webcam_frame.progress.set(self.reps / self.reps_needed)
 
         # Resets reps count if the last letter isn't the same as the current letter
         else:
             self.reps = 0
-            self.webcam_frame.progress.set(0)
+            self.tabs.webcam_frame.progress.set(0)
 
         # When the number of reps reaches the threshold, add it to the phrase and updates the output text
         if self.reps >= self.reps_needed:
             self.phrase += f"{letter}"
-            self.output_frame.output.configure(text=f"{self.phrase}{GLOBALS['CURSOR_CHAR']}")
+            self.tabs.output_frame.output.configure(text=f"{self.phrase}{GLOBALS['CURSOR_CHAR']}")
             self.reps = 0
-            self.webcam_frame.progress.set(0)
+            self.tabs.webcam_frame.progress.set(0)
 
         self.previous_letter = letter
 
@@ -270,9 +279,9 @@ class App(ctk.CTk):
         # Clear all variables
         self.phrase = ""
         self.reps = 0
-        self.webcam_frame.progress.set(0)
+        self.tabs.webcam_frame.progress.set(0)
 
-        self.output_frame.output.configure(text=GLOBALS["CURSOR_CHAR"])
+        self.tabs.output_frame.output.configure(text=GLOBALS["CURSOR_CHAR"])
 
 # Creates the app class and starts the webcam
 app = App()
