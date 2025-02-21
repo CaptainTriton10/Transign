@@ -14,34 +14,15 @@ import mediapipe as mp
 import cv2 as cv
 import numpy as np
 import threading
+from deps import *
 
 print(f"Done! [{round(time.time() - start_time, 3)}s elapsed]")
 
-GLOBALS = {
-    "IMG_WIDTH" : 480,
-    "IMG_HEIGHT" : 360,
-    "PADX" : 15,
-    "PADY" : 15,
-    "MAX_REPS" : 50,
-    "CURSOR_CHAR" : "▌",
-    "CAM_NUMBERS" : [
-        "0",
-        "1",
-        "2",
-        "3"
-    ]
-}
-
-COLOURS = {
-    "MED_GREY" : "#383c3c"
-}
-
-# .task model path
-MODEL_PATH = r"Models\asl_model_v3.task"
-
-with open(MODEL_PATH, "rb") as file:
-    model = file.read()
-
+# Settings:
+# Theme
+#  - Light/Dark
+#  - Colour dropdown
+#  - High contrast
 
 # Gets the letter from a mp_image
 def GetLetter(result, output_image, timestamp_ms):
@@ -58,35 +39,6 @@ def GetLetter(result, output_image, timestamp_ms):
                     app.after(0, app.UpdateLetter, prediction[0])
 
 
-# Prerequisites for mediapipe gesture recognition
-BaseOptions = mp.tasks.BaseOptions
-GestureRecognizer = mp.tasks.vision.GestureRecognizer
-GestureRecognizerOptions = mp.tasks.vision.GestureRecognizerOptions
-GestureRecognizerResult = mp.tasks.vision.GestureRecognizerResult
-VisionRunningMode = mp.tasks.vision.RunningMode
-
-# Options for gesture recogniser
-options = GestureRecognizerOptions(
-    base_options=BaseOptions(model_asset_buffer=model),
-    running_mode=VisionRunningMode.LIVE_STREAM,
-    result_callback=GetLetter
-)
-
-
-# Unused, but crops image to hand with an offset
-def CropToBounds(image, x_landmarks, y_landmarks):
-    offset = 40
-
-    # Gets pixel values of edge crops with added offset
-    left = int(min(x_landmarks) * 640) - offset
-    right = int(max(x_landmarks) * 640) + offset
-    bottom = int(max(y_landmarks) * 480) + offset
-    upper = int(min(y_landmarks) * 480) - offset
-
-    cropped_image = image.crop((left, upper, right, bottom))
-    return cropped_image
-
-
 def ChangeWebcamNumber(choice):
     try:
         app.cap = cv.VideoCapture(int(choice))
@@ -95,11 +47,15 @@ def ChangeWebcamNumber(choice):
         print("Something went wrong:", e)
         print(choice)
 
+#region Webcam Tab
 
 # Class for webcam image/label within the frame
 class WebcamFrame(ctk.CTkFrame):
     def __init__(self, master, width=GLOBALS["IMG_WIDTH"], height=GLOBALS["IMG_HEIGHT"], fg_color=COLOURS["MED_GREY"]):
         super().__init__(master, width, height, fg_color=COLOURS["MED_GREY"])
+
+        self.rowconfigure((0,1), weight=1)
+        self.columnconfigure(0, weight=1)
 
         # Label that is used to show image
         # Weirdly, it is not an image, but a label with the text set to ""
@@ -154,15 +110,40 @@ class OutputFrame(ctk.CTkFrame):
         self.output = ctk.CTkLabel(self, text=GLOBALS["CURSOR_CHAR"], font=output_font, wraplength=900)
         self.output.grid(row=0, column=0, padx=GLOBALS["PADX"], pady=GLOBALS["PADY"], sticky="ew")
 
+#endregion
 
-class Tabs(ctk.CTkTabview):
+#region Settings Tab
+
+class SettingsFrame(ctk.CTkFrame):
     def __init__(self, master):
         super().__init__(master)
 
+        self.title_font = ctk.CTkFont(family="TkDefaultFont", size=42, weight="bold")
+
+        self.title = ctk.CTkLabel(self, text="Theme", font=self.title_font)
+        self.title.grid(row=0, column=0, padx=GLOBALS["PADX"], pady=GLOBALS["PADY"], sticky="w")
+
+        self.colour_mode = ctk.CTkSwitch(self, text="Light Mode")
+        self.colour_mode.grid(row=1, column=0, padx=GLOBALS["PADX"], pady=(0, GLOBALS["PADY"]), sticky="w")
+
+#endregion
+
+# Class for tab view
+class Tabs(ctk.CTkTabview):
+    def __init__(self, master, width=GLOBALS["WINDOW_WIDTH"], height=GLOBALS["WINDOW_HEIGHT"]):
+        super().__init__(master, width, height)
+
         # Tab objects
         self.webcam_tab = self.add("Webcam")
+        self.settings_tab = self.add("Settings")
 
-        # Frame for webcam image
+        # Configure rows/columns for tabs
+        self.webcam_tab.columnconfigure(0, weight=1)
+        self.webcam_tab.rowconfigure((0, 1), weight=1)
+
+        #region Webcam Tab
+
+        #Frame for webcam image
         self.webcam_frame = WebcamFrame(self.webcam_tab)
         self.webcam_frame.grid(row=0, column=0, padx=GLOBALS["PADX"], pady=GLOBALS["PADY"], sticky="nsew")
 
@@ -174,6 +155,15 @@ class Tabs(ctk.CTkTabview):
         self.output_frame = OutputFrame(self.webcam_tab)
         self.output_frame.grid(row=1, column=0, padx=GLOBALS["PADX"], pady=(0, GLOBALS["PADY"]), sticky="nsew", columnspan=2)
 
+        #endregion
+
+        #region Settings Tab
+
+        self.settings_frame = SettingsFrame(self.settings_tab)
+        self.settings_frame.grid(row=0, column=0, padx=GLOBALS["PADX"], pady=GLOBALS["PADY"], sticky="nsew")
+
+        #endregion
+
 
 # Main app class
 class App(ctk.CTk):
@@ -181,10 +171,10 @@ class App(ctk.CTk):
         super().__init__()
 
         # Creates gesture recogniser object
-        self.recogniser = GestureRecognizer.create_from_options(options)
+        self.recogniser = GestureRecognizer.create_from_options(GetOptions(GetLetter))
 
         # Creates window size and title
-        self.geometry("1080x720")
+        self.geometry(f"{GLOBALS['WINDOW_WIDTH']}x{GLOBALS['WINDOW_HEIGHT']}")
         self.title("Transign")
 
         # Configure rows and columns
@@ -193,7 +183,7 @@ class App(ctk.CTk):
 
         # CTkTabView for page tabs
         self.tabs = Tabs(self)
-        self.tabs.pack(expand=True)
+        self.tabs.pack(expand=True, padx=GLOBALS["PADX"], pady=GLOBALS["PADY"])
 
         # Variables for update loop
         self.previous_letter = ""
