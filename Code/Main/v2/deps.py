@@ -1,5 +1,4 @@
 from mediapipe import tasks
-import customtkinter as ctk
 
 GLOBALS = {
     "IMG_WIDTH" : 480,
@@ -17,7 +16,8 @@ GLOBALS = {
 }
 
 COLOURS = {
-    "MED_GREY" : "#383c3c"
+    "MED_GREY" : "#383C3C",
+    "LIGHT_GREY" : "#C0C0C0"
 }
 
 # Unused, but crops image to hand with an offset

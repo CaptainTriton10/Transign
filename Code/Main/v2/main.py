@@ -18,6 +18,7 @@ from deps import *
 
 print(f"Done! [{round(time.time() - start_time, 3)}s elapsed]")
 
+
 # Settings:
 # Theme
 #  - Light/Dark
@@ -47,14 +48,16 @@ def ChangeWebcamNumber(choice):
         print("Something went wrong:", e)
         print(choice)
 
-#region Webcam Tab
+
+# region Webcam Tab
 
 # Class for webcam image/label within the frame
 class WebcamFrame(ctk.CTkFrame):
-    def __init__(self, master, width=GLOBALS["IMG_WIDTH"], height=GLOBALS["IMG_HEIGHT"], fg_color=COLOURS["MED_GREY"]):
-        super().__init__(master, width, height, fg_color=COLOURS["MED_GREY"])
+    def __init__(self, master, width=GLOBALS["IMG_WIDTH"], height=GLOBALS["IMG_HEIGHT"],
+                 fg_color=(COLOURS["LIGHT_GREY"], COLOURS["MED_GREY"])):
+        super().__init__(master, width, height, fg_color=(COLOURS["LIGHT_GREY"], COLOURS["MED_GREY"]))
 
-        self.rowconfigure((0,1), weight=1)
+        self.rowconfigure((0, 1), weight=1)
         self.columnconfigure(0, weight=1)
 
         # Label that is used to show image
@@ -70,8 +73,8 @@ class WebcamFrame(ctk.CTkFrame):
 
 # Class for frame containing options for webcam/recogniser
 class OptionsFrame(ctk.CTkFrame):
-    def __init__(self, master, fg_color=COLOURS["MED_GREY"]):
-        super().__init__(master, fg_color=COLOURS["MED_GREY"])
+    def __init__(self, master, fg_color=(COLOURS["LIGHT_GREY"], COLOURS["MED_GREY"])):
+        super().__init__(master, fg_color=(COLOURS["LIGHT_GREY"], COLOURS["MED_GREY"]))
 
         # Configure rows and columns expanding
         self.columnconfigure(0, weight=1)
@@ -82,7 +85,8 @@ class OptionsFrame(ctk.CTkFrame):
 
         # Option box for selecting webcam
         self.webcam_number = ctk.StringVar(value=GLOBALS["CAM_NUMBERS"][1])
-        self.webcam_options = ctk.CTkOptionMenu(self, values=GLOBALS["CAM_NUMBERS"], variable=self.webcam_number, command=ChangeWebcamNumber)
+        self.webcam_options = ctk.CTkOptionMenu(self, values=GLOBALS["CAM_NUMBERS"], variable=self.webcam_number,
+                                                command=ChangeWebcamNumber)
         self.webcam_options.grid(row=1, column=0, padx=GLOBALS["PADX"], pady=(0, GLOBALS["PADY"]), sticky="ew")
 
         # Label for sense_slider
@@ -100,8 +104,8 @@ class OptionsFrame(ctk.CTkFrame):
 
 # Class for showing output text
 class OutputFrame(ctk.CTkFrame):
-    def __init__(self, master, fg_color=COLOURS["MED_GREY"]):
-        super().__init__(master, fg_color=COLOURS["MED_GREY"])
+    def __init__(self, master, fg_color=(COLOURS["LIGHT_GREY"], COLOURS["MED_GREY"])):
+        super().__init__(master, fg_color=(COLOURS["LIGHT_GREY"], COLOURS["MED_GREY"]))
 
         # Literally just a font
         output_font = ctk.CTkFont(family="TkDefaultFont", size=56, weight="bold")
@@ -110,23 +114,32 @@ class OutputFrame(ctk.CTkFrame):
         self.output = ctk.CTkLabel(self, text=GLOBALS["CURSOR_CHAR"], font=output_font, wraplength=900)
         self.output.grid(row=0, column=0, padx=GLOBALS["PADX"], pady=GLOBALS["PADY"], sticky="ew")
 
-#endregion
 
-#region Settings Tab
+# endregion
+
+# region Settings Tab
 
 class SettingsFrame(ctk.CTkFrame):
     def __init__(self, master):
         super().__init__(master)
 
+        # Font for title text
         self.title_font = ctk.CTkFont(family="TkDefaultFont", size=42, weight="bold")
 
+        # Title label
         self.title = ctk.CTkLabel(self, text="Theme", font=self.title_font)
         self.title.grid(row=0, column=0, padx=GLOBALS["PADX"], pady=GLOBALS["PADY"], sticky="w")
 
-        self.colour_mode = ctk.CTkSwitch(self, text="Light Mode")
-        self.colour_mode.grid(row=1, column=0, padx=GLOBALS["PADX"], pady=(0, GLOBALS["PADY"]), sticky="w")
+        # Switch for light/dark mode
+        self.colour_mode = ctk.StringVar(value="off")
+        switch_mode = lambda: ctk.set_appearance_mode(self.colour_mode.get())
 
-#endregion
+        self.colour_mode_switch = ctk.CTkSwitch(self, text="Light Mode", variable=self.colour_mode, command=switch_mode,
+                                                onvalue="light", offvalue="dark")
+        self.colour_mode_switch.grid(row=1, column=0, padx=GLOBALS["PADX"], pady=(0, GLOBALS["PADY"]), sticky="w")
+
+
+# endregion
 
 # Class for tab view
 class Tabs(ctk.CTkTabview):
@@ -141,9 +154,9 @@ class Tabs(ctk.CTkTabview):
         self.webcam_tab.columnconfigure(0, weight=1)
         self.webcam_tab.rowconfigure((0, 1), weight=1)
 
-        #region Webcam Tab
+        # region Webcam Tab
 
-        #Frame for webcam image
+        # Frame for webcam image
         self.webcam_frame = WebcamFrame(self.webcam_tab)
         self.webcam_frame.grid(row=0, column=0, padx=GLOBALS["PADX"], pady=GLOBALS["PADY"], sticky="nsew")
 
@@ -153,16 +166,17 @@ class Tabs(ctk.CTkTabview):
 
         # Frame for output text
         self.output_frame = OutputFrame(self.webcam_tab)
-        self.output_frame.grid(row=1, column=0, padx=GLOBALS["PADX"], pady=(0, GLOBALS["PADY"]), sticky="nsew", columnspan=2)
+        self.output_frame.grid(row=1, column=0, padx=GLOBALS["PADX"], pady=(0, GLOBALS["PADY"]), sticky="nsew",
+                               columnspan=2)
 
-        #endregion
+        # endregion
 
-        #region Settings Tab
+        # region Settings Tab
 
         self.settings_frame = SettingsFrame(self.settings_tab)
         self.settings_frame.grid(row=0, column=0, padx=GLOBALS["PADX"], pady=GLOBALS["PADY"], sticky="nsew")
 
-        #endregion
+        # endregion
 
 
 # Main app class
@@ -242,7 +256,8 @@ class App(ctk.CTk):
 
     def UpdateGUI(self, image):
         # Updates the webcam label
-        self.ctk_image = ctk.CTkImage(light_image=image, dark_image=image, size=(GLOBALS["IMG_WIDTH"], GLOBALS["IMG_HEIGHT"]))
+        self.ctk_image = ctk.CTkImage(light_image=image, dark_image=image,
+                                      size=(GLOBALS["IMG_WIDTH"], GLOBALS["IMG_HEIGHT"]))
         self.tabs.webcam_frame.cam.configure(image=self.ctk_image)
 
     def UpdateLetter(self, letter):
@@ -272,6 +287,7 @@ class App(ctk.CTk):
         self.tabs.webcam_frame.progress.set(0)
 
         self.tabs.output_frame.output.configure(text=GLOBALS["CURSOR_CHAR"])
+
 
 # Creates the app class and starts the webcam
 app = App()
