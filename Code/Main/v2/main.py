@@ -18,12 +18,15 @@ from deps import *
 
 print(f"Done! [{round(time.time() - start_time, 3)}s elapsed]")
 
+# Get the theme from the config file
+theme = GetConfig("theme", "colour_theme")
 
-# Settings:
-# Theme
-#  - Light/Dark
-#  - Colour dropdown
-#  - High contrast
+# If the theme isn't set to default, set it to the config spec
+if THEMES[theme] != "default":
+    ctk.set_default_color_theme(THEMES[theme])
+
+frame_colour = GetFrameColour()
+
 
 # Gets the letter from a mp_image
 def GetLetter(result, output_image, timestamp_ms):
@@ -53,9 +56,8 @@ def ChangeWebcamNumber(choice):
 
 # Class for webcam image/label within the frame
 class WebcamFrame(ctk.CTkFrame):
-    def __init__(self, master, width=GLOBALS["IMG_WIDTH"], height=GLOBALS["IMG_HEIGHT"],
-                 fg_color=(COLOURS["LIGHT_GREY"], COLOURS["MED_GREY"])):
-        super().__init__(master, width, height, fg_color=(COLOURS["LIGHT_GREY"], COLOURS["MED_GREY"]))
+    def __init__(self, master, width, height, fg_color=frame_colour):
+        super().__init__(master, width, height, fg_color=fg_color)
 
         self.rowconfigure((0, 1), weight=1)
         self.columnconfigure(0, weight=1)
@@ -73,8 +75,8 @@ class WebcamFrame(ctk.CTkFrame):
 
 # Class for frame containing options for webcam/recogniser
 class OptionsFrame(ctk.CTkFrame):
-    def __init__(self, master, fg_color=(COLOURS["LIGHT_GREY"], COLOURS["MED_GREY"])):
-        super().__init__(master, fg_color=(COLOURS["LIGHT_GREY"], COLOURS["MED_GREY"]))
+    def __init__(self, master, fg_color=frame_colour):
+        super().__init__(master, fg_color=fg_color)
 
         # Configure rows and columns expanding
         self.columnconfigure(0, weight=1)
@@ -104,8 +106,8 @@ class OptionsFrame(ctk.CTkFrame):
 
 # Class for showing output text
 class OutputFrame(ctk.CTkFrame):
-    def __init__(self, master, fg_color=(COLOURS["LIGHT_GREY"], COLOURS["MED_GREY"])):
-        super().__init__(master, fg_color=(COLOURS["LIGHT_GREY"], COLOURS["MED_GREY"]))
+    def __init__(self, master, fg_color=frame_colour):
+        super().__init__(master, fg_color=fg_color)
 
         # Literally just a font
         output_font = ctk.CTkFont(family="TkDefaultFont", size=56, weight="bold")
@@ -120,8 +122,8 @@ class OutputFrame(ctk.CTkFrame):
 # region Settings Tab
 
 class SettingsFrame(ctk.CTkFrame):
-    def __init__(self, master):
-        super().__init__(master)
+    def __init__(self, master, fg_color=frame_colour):
+        super().__init__(master, fg_color=fg_color)
 
         # Font for title text
         self.title_font = ctk.CTkFont(family="TkDefaultFont", size=42, weight="bold")
@@ -138,12 +140,23 @@ class SettingsFrame(ctk.CTkFrame):
                                                 onvalue="light", offvalue="dark")
         self.colour_mode_switch.grid(row=1, column=0, padx=GLOBALS["PADX"], pady=(0, GLOBALS["PADY"]), sticky="w")
 
+        # Dropdown for choosing a theme
+        theme_select = lambda choice: SetConfig("theme", "colour_theme", choice)
+
+        self.theme = ctk.CTkOptionMenu(self, values=list(THEMES.keys()), command=theme_select)
+        self.theme.grid(row=2, column=0, padx=GLOBALS["PADX"], pady=(0, GLOBALS["PADY"]), sticky="w")
+
+        self.theme.set(theme)
+
 
 # endregion
 
+# region App
+
+
 # Class for tab view
 class Tabs(ctk.CTkTabview):
-    def __init__(self, master, width=GLOBALS["WINDOW_WIDTH"], height=GLOBALS["WINDOW_HEIGHT"]):
+    def __init__(self, master, width, height):
         super().__init__(master, width, height)
 
         # Tab objects
@@ -157,7 +170,7 @@ class Tabs(ctk.CTkTabview):
         # region Webcam Tab
 
         # Frame for webcam image
-        self.webcam_frame = WebcamFrame(self.webcam_tab)
+        self.webcam_frame = WebcamFrame(self.webcam_tab, width=GLOBALS["IMG_WIDTH"], height=GLOBALS["IMG_HEIGHT"])
         self.webcam_frame.grid(row=0, column=0, padx=GLOBALS["PADX"], pady=GLOBALS["PADY"], sticky="nsew")
 
         # Frame for options
@@ -196,7 +209,7 @@ class App(ctk.CTk):
         self.rowconfigure(1, weight=1)
 
         # CTkTabView for page tabs
-        self.tabs = Tabs(self)
+        self.tabs = Tabs(self, width=GLOBALS["WINDOW_WIDTH"], height=GLOBALS["WINDOW_HEIGHT"])
         self.tabs.pack(expand=True, padx=GLOBALS["PADX"], pady=GLOBALS["PADY"])
 
         # Variables for update loop
@@ -296,3 +309,5 @@ app.mainloop()
 
 # Releases the webcam once the program terminates
 app.cap.release()
+
+# endregion
