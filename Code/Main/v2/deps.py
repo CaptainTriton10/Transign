@@ -495,6 +495,8 @@ COLOURS = {
     'yellow4': '#8B8B00'}
 
 
+# region Functions
+
 # Unused, but crops image to hand with an offset
 def CropToBounds(image, x_landmarks, y_landmarks):
     offset = 40
@@ -577,11 +579,12 @@ def GetFrameColour() -> str:
         hex_code = HexToRgb(base_colour)
         dark_color = tuple([int(i * dark_factor) for i in hex_code])
 
-
         # Found from https://www.codespeedy.com/convert-rgb-to-hex-color-code-in-python/
         hex_dark_color = "#" + ("%02x%02x%02x" % dark_color).upper()
         return hex_dark_color
 
+
+# endregion
 
 # region Mediapipe
 
