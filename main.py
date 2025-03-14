@@ -8,24 +8,30 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 print("Loading dependencies")
 start_time = time.time()
 
-import customtkinter as ctk
-from PIL import Image
 import mediapipe as mp
 import cv2 as cv
-import numpy as np
 import threading
 from deps import *
 
 print(f"Done! [{round(time.time() - start_time, 3)}s elapsed]")
 
-# Get the theme from the config file
-theme = GetConfig("theme", "colour_theme")
 
-# If the theme isn't set to default, set it to the config spec
-if THEMES[theme] != "default":
-    ctk.set_default_color_theme(THEMES[theme])
+@AutoStart
+def LoadConfig():
+    # Get settings from config file
+    theme = GetConfig("theme", "colour_theme")
+    colour_mode = GetConfig("theme", "colour_mode")
+    frame_rate = GetConfig("recogniser", "frame_rate_cap")
+    webcam = GetConfig("webcam", "webcam_number")
 
-frame_colour = GetFrameColour()
+    # If the theme isn't set to default, set it to the config spec
+    if THEMES[theme] != "default":
+        ctk.set_default_color_theme(THEMES[theme])
+
+    # Set light vs dark
+    ctk.set_appearance_mode(colour_mode)
+
+    GLOBALS["FRAME_COLOUR"] = GetFrameColour(ctk.get_appearance_mode())
 
 
 # Gets the letter from a mp_image
@@ -46,6 +52,7 @@ def GetLetter(result, output_image, timestamp_ms):
 def ChangeWebcamNumber(choice):
     try:
         app.cap = cv.VideoCapture(int(choice))
+        SetConfig("webcam", "webcam_number", str(choice))
 
     except Exception as e:
         print("Something went wrong:", e)
@@ -56,7 +63,7 @@ def ChangeWebcamNumber(choice):
 
 # Class for webcam image/label within the frame
 class WebcamFrame(ctk.CTkFrame):
-    def __init__(self, master, width, height, fg_color=frame_colour):
+    def __init__(self, master, width, height, fg_color=GLOBALS["FRAME_COLOUR"]):
         super().__init__(master, width, height, fg_color=fg_color)
 
         self.rowconfigure((0, 1), weight=1)
@@ -75,7 +82,7 @@ class WebcamFrame(ctk.CTkFrame):
 
 # Class for frame containing options for webcam/recogniser
 class OptionsFrame(ctk.CTkFrame):
-    def __init__(self, master, fg_color=frame_colour):
+    def __init__(self, master, fg_color=GLOBALS["FRAME_COLOUR"]):
         super().__init__(master, fg_color=fg_color)
 
         # Configure rows and columns expanding
@@ -106,7 +113,7 @@ class OptionsFrame(ctk.CTkFrame):
 
 # Class for showing output text
 class OutputFrame(ctk.CTkFrame):
-    def __init__(self, master, fg_color=frame_colour):
+    def __init__(self, master, fg_color=GLOBALS["FRAME_COLOUR"]):
         super().__init__(master, fg_color=fg_color)
 
         # Literally just a font
@@ -121,8 +128,8 @@ class OutputFrame(ctk.CTkFrame):
 
 # region Settings Tab
 
-class SettingsFrame(ctk.CTkFrame):
-    def __init__(self, master, fg_color=frame_colour):
+class ThemeFrame(ctk.CTkFrame):
+    def __init__(self, master, fg_color=GLOBALS["FRAME_COLOUR"]):
         super().__init__(master, fg_color=fg_color)
 
         # Font for title text
@@ -133,20 +140,48 @@ class SettingsFrame(ctk.CTkFrame):
         self.title.grid(row=0, column=0, padx=GLOBALS["PADX"], pady=GLOBALS["PADY"], sticky="w")
 
         # Switch for light/dark mode
-        self.colour_mode = ctk.StringVar(value="off")
-        switch_mode = lambda: ctk.set_appearance_mode(self.colour_mode.get())
-
-        self.colour_mode_switch = ctk.CTkSwitch(self, text="Light Mode", variable=self.colour_mode, command=switch_mode,
-                                                onvalue="light", offvalue="dark")
-        self.colour_mode_switch.grid(row=1, column=0, padx=GLOBALS["PADX"], pady=(0, GLOBALS["PADY"]), sticky="w")
+        # self.colour_mode = ctk.StringVar(value=ctk.get_appearance_mode())
+        # switch_mode = lambda: SetConfig("theme", "colour_mode", "dark" if self.colour_mode.get() == "Light" else "light")
+        #
+        # self.colour_mode_switch = ctk.CTkSwitch(self, text="Dark Mode", variable=self.colour_mode, command=switch_mode(),
+        #                                         onvalue="light", offvalue="dark")
+        # self.colour_mode_switch.grid(row=1, column=0, padx=GLOBALS["PADX"], pady=(0, GLOBALS["PADY"]), sticky="w")
 
         # Dropdown for choosing a theme
         theme_select = lambda choice: SetConfig("theme", "colour_theme", choice)
 
         self.theme = ctk.CTkOptionMenu(self, values=list(THEMES.keys()), command=theme_select)
-        self.theme.grid(row=2, column=0, padx=GLOBALS["PADX"], pady=(0, GLOBALS["PADY"]), sticky="w")
+        self.theme.grid(row=1, column=0, padx=GLOBALS["PADX"], pady=(0, GLOBALS["PADY"]), sticky="w")
 
-        self.theme.set(theme)
+        self.theme.set(GLOBALS["THEME"])
+
+
+class RecogniserFrame(ctk.CTkFrame):
+    def __init__(self, master, fg_color=GLOBALS["FRAME_COLOUR"]):
+        super().__init__(master, fg_color=fg_color)
+
+        # Font for title text
+        self.title_font = ctk.CTkFont(family="TkDefaultFont", size=42, weight="bold")
+
+        # Title label
+        self.title = ctk.CTkLabel(self, text="Recogniser", font=self.title_font)
+        self.title.grid(row=0, column=0, padx=GLOBALS["PADX"], pady=GLOBALS["PADY"], sticky="w")
+
+        # Frame rate cap slider label
+        self.frame_cap_label = ctk.CTkLabel(self, text="Webcam Frame Rate")
+        self.frame_cap_label.grid(row=1, column=0, padx=GLOBALS["PADX"], pady=(0, GLOBALS["PADY"]), sticky="ew")
+
+        # Frame rate cap slider
+        self.frame_cap_slider = ctk.CTkSlider(self, number_of_steps=59)
+        self.frame_cap_slider.grid(row=2, column=0, padx=GLOBALS["PADX"], sticky="ew")
+
+        # Frame rate cap slider values
+        self.frame_cap_values = ctk.CTkLabel(self, text=f"0{' ' * 75}60")
+        self.frame_cap_values.grid(row=3, column=0, padx=GLOBALS["PADX"], pady=(0, GLOBALS["PADY"]), sticky="new")
+
+        # Preprocessing checkbox
+        self.preprocess_checkbox = ctk.CTkCheckBox(self, text="Enable Preprocessing")
+        self.preprocess_checkbox.grid(row=4, column=0, padx=GLOBALS["PADX"], pady=(0, GLOBALS["PADY"]), sticky="ew")
 
 
 # endregion
@@ -186,8 +221,11 @@ class Tabs(ctk.CTkTabview):
 
         # region Settings Tab
 
-        self.settings_frame = SettingsFrame(self.settings_tab)
-        self.settings_frame.grid(row=0, column=0, padx=GLOBALS["PADX"], pady=GLOBALS["PADY"], sticky="nsew")
+        self.recogniser_frame = RecogniserFrame(self.settings_tab)
+        self.recogniser_frame.grid(row=0, column=0, padx=GLOBALS["PADX"], pady=GLOBALS["PADY"], sticky="nsew")
+
+        self.theme_frame = ThemeFrame(self.settings_tab)
+        self.theme_frame.grid(row=0, column=1, padx=(0, GLOBALS["PADX"]), pady=GLOBALS["PADY"], sticky="nsew")
 
         # endregion
 
@@ -254,8 +292,11 @@ class App(ctk.CTk):
                 self.timestamp += 1
                 self.reps_needed = int(((1 - self.tabs.options_frame.sense_slider.get()) * GLOBALS["MAX_REPS"]) + 1)
 
+                time.sleep(1 / ((self.tabs.recogniser_frame.frame_cap_slider.get() * 59) + 1))
+
                 # RGB image from frame and array from RGB image
-                image_rgb = cv.cvtColor(frame, cv.COLOR_BGR2RGB)
+                image_rgb = PreprocessImage(cv.cvtColor(frame, cv.COLOR_BGR2RGB))
+                frame = PreprocessImage(frame)
                 image = Image.fromarray(image_rgb)
 
                 # Converts frame to a mediapipe image to be processed by the recogniser

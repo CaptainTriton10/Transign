@@ -1,5 +1,5 @@
 # Transign
-***
+
 ## Introduction
 Transign is a GUI based sign language (ASL) interpreter that can read the alphabet from your webcam.
 
@@ -13,11 +13,25 @@ Transign is a GUI based sign language (ASL) interpreter that can read the alphab
 | 3.9            | ✅         |
 | < 3.9          | *Unknown* |
 
-1. Create a virtual environment:
+Clone the repository:
+```commandline
+git clone https://github.com/CaptainTriton10/Transign.git
+```
 
-2. Ensure you have the correct python packages installed, by running: <br>
-``` commandline
+Create a virtual environment:
+```commandline
+virtualenv transign_env
+```
+
+Ensure you have the correct python packages installed, by running:
+```commandline
 pip install -r requirements.txt
 ```
 
-Optionally, check which webcam number  is your front camera or the one you want to use.
+## How to run
+To run the GUI, run `main.py`, or run the command:
+```commandline
+transign_env\Scripts\python.exe Code/Main/v2/main.py
+```
+
+After the package dependencies load, the GUI will start.

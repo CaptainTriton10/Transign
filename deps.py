@@ -1,7 +1,10 @@
-from mediapipe import tasks
-import customtkinter as ctk
-from customtkinter import ThemeManager
 from configparser import ConfigParser, NoOptionError, NoSectionError
+
+import customtkinter as ctk
+import numpy as np
+from PIL import ImageEnhance, Image
+from customtkinter import ThemeManager
+from mediapipe import tasks
 
 GLOBALS = {
     "IMG_WIDTH": 480,
@@ -12,6 +15,8 @@ GLOBALS = {
     "PADY": 15,
     "MAX_REPS": 50,
     "CURSOR_CHAR": "▌",
+    "FRAME_COLOUR": "#FFFFFF",
+    "THEME": "default",
     "CAM_NUMBERS": [
         "0",
         "1",
@@ -497,6 +502,10 @@ COLOURS = {
 
 # region Functions
 
+def AutoStart(func):
+    func()
+
+
 # Unused, but crops image to hand with an offset
 def CropToBounds(image, x_landmarks, y_landmarks):
     offset = 40
@@ -511,6 +520,17 @@ def CropToBounds(image, x_landmarks, y_landmarks):
     return cropped_image
 
 
+def PreprocessImage(img_arr, contrast=1):
+    try:
+        image = Image.fromarray(img_arr)
+    except Exception as e:
+        print(e)
+    else:
+        image_contrast = ImageEnhance.Contrast(image)
+
+        return np.array(image_contrast.enhance(contrast))
+
+
 # Converts hex code string to rgb tuple
 def HexToRgb(hex_code: str) -> (int, int, int):
     hex_code = hex_code.lstrip("#")
@@ -522,7 +542,7 @@ def HexToRgb(hex_code: str) -> (int, int, int):
 
 
 # Gets value from config.ini file
-def GetConfig(section, name, config_file=r"Code/Main/v2/config.ini"):
+def GetConfig(section, name, config_file=r"config.ini"):
     config = ConfigParser()
     value = None
     try:
@@ -537,7 +557,7 @@ def GetConfig(section, name, config_file=r"Code/Main/v2/config.ini"):
 
 
 # Updates config.ini file
-def SetConfig(section, name, value, config_file=r"Code/Main/v2/config.ini"):
+def SetConfig(section, name, value, config_file=r"config.ini"):
     config = ConfigParser()
     try:
         config.read(config_file)
@@ -552,12 +572,12 @@ def SetConfig(section, name, value, config_file=r"Code/Main/v2/config.ini"):
 
 
 # Gets dark colour from frame
-def GetFrameColour() -> str:
+def GetFrameColour(colour: str) -> str:
     # Widget to be used for colour sampling
     widget = "CTkFrame"
     option = "fg_color"
     dark_factor = 0.9
-    mode = 0 if ctk.get_appearance_mode() == "light" else 1  # Gets light/dark as 0 or 1
+    mode = 0 if colour == "Light" else 1  # Gets light/dark as 0 or 1
     theme = ThemeManager.theme
 
     base_colour: str = None
