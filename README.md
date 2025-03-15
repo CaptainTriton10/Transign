@@ -29,7 +29,7 @@ pip install -r requirements.txt
 ```
 
 ## How to run
-To run the GUI, run `main.py`, or run the command:
+To run the GUI, run `main.py` from within the venv, or run the command:
 ```commandline
 transign_env\Scripts\python.exe Code/Main/v2/main.py
 ```
