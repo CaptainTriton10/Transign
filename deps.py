@@ -522,7 +522,7 @@ def HexToRgb(hex_code: str) -> (int, int, int):
 
 
 # Gets value from config.ini file
-def GetConfig(section, name, config_file=r"Code/Main/v2/config.ini"):
+def GetConfig(section, name, config_file="config.ini"):
     config = ConfigParser()
     value = None
     try:
@@ -537,7 +537,7 @@ def GetConfig(section, name, config_file=r"Code/Main/v2/config.ini"):
 
 
 # Updates config.ini file
-def SetConfig(section, name, value, config_file=r"Code/Main/v2/config.ini"):
+def SetConfig(section, name, value, config_file="config.ini"):
     config = ConfigParser()
     try:
         config.read(config_file)
@@ -589,7 +589,7 @@ def GetFrameColour() -> str:
 # region Mediapipe
 
 # .task model path
-MODEL_PATH = r"Models\asl_model_v3.task"
+MODEL_PATH = r"Old Models\asl_model_v3.task"
 
 with open(MODEL_PATH, "rb") as file:
     model = file.read()

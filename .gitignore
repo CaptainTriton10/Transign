@@ -32,5 +32,5 @@ Thumbs.db
 config.ini
 secrets.txt
 
-# Ignore dataset folder
 /Dataset/
+/Packages/
