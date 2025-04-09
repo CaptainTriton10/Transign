@@ -6,6 +6,15 @@
 
 Transign is a GUI based sign language (ASL) interpreter that can read the alphabet from your webcam.
 
+# Contents
+
+1. [Setup](#setup)
+2. [How to run](#how-to-run)
+3. [Usage](#usage)
+4. [Troubleshooting](#troubleshooting)
+
+***
+
 ## Setup
 
 | Python Version | Support   |
@@ -75,5 +84,4 @@ RuntimeError: This version of jaxlib was built using AVX instructions, which you
 ```
 
 You can fix it by commenting out ```cpu_feature_guard.check_cpu_features()``` in
-```[env name]\lib\site-packages\jax\_src\lib\__init__.py```
-
+```[env name]\lib\site-packages\jax\_src\lib\__init__.py```. This error occurs on **ARM** based processors, such as surface laptops.
