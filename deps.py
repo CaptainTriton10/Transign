@@ -589,7 +589,7 @@ def GetFrameColour() -> str:
 # region Mediapipe
 
 # .task model path
-MODEL_PATH = r"Old Models\asl_model_v3.task"
+MODEL_PATH = r"asl_model_v3.task"
 
 with open(MODEL_PATH, "rb") as file:
     model = file.read()
