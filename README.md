@@ -16,20 +16,41 @@ Transign is a GUI based sign language (ASL) interpreter that can read the alphab
 | 3.9            | ✅         |
 | < 3.9          | *Unknown* |
 
-1. Create a virtual environment:
+1. Download the latest release.
 
-2. Ensure you have the correct python packages installed, by running: <br>
+
+2. Extract the ```.tar``` or ```.zip``` file.
+
+
+3. Create a virtual environment **within the extracted folder**:
+
+```commandline
+virtualenv transign_env
+```
+
+5. Activate the virtual environment by running:
+
+```commandline
+"transign_env/Scripts/activate.bat"
+```
+
+4. Ensure you have the correct python packages installed, by running this command **within the virtual environment**:
 
 ``` commandline
 pip install -r requirements.txt --no-deps
 ``` 
 
-**It is important that you use the ```--no-deps``` option, as some packages will have version conflicts.**
+**It is important that you use the ```--no-deps``` option, as some packages will have version conflicts.** Also, it will take a while to install all the packages, so don't stop the process if you think it's frozen.
 
 ## How to run
 
-Run ```main.py``` in ```./Code/Main/v2``` from within the virtual environment. After the packages load, the GUI will
-load.
+Run ```main.py``` from within the virtual environment. After the packages load (which may take 7-12 seconds) the GUI will load.
+
+You can do this with the command:
+```commandline
+py main.py
+```
+It is important to note that you will have to restart the virtual environment with ```"transign_env/Scripts/activate.bat"``` if you close the command prompt window.
 
 ## Usage
 
@@ -48,7 +69,11 @@ To change the sensitivity of the detecter, you can change the ```Sensitivity``` 
 ## Troubleshooting
 
 If you get the error:
+
 ```
 RuntimeError: This version of jaxlib was built using AVX instructions, which your CPU and/or operating system do not support. You may be able work around this issue by building jaxlib from source.
 ```
-You can fix it by commenting out ```cpu_feature_guard.check_cpu_features()``` in ```[env name]\lib\site-packages\jax\_src\lib\__init__.py```
+
+You can fix it by commenting out ```cpu_feature_guard.check_cpu_features()``` in
+```[env name]\lib\site-packages\jax\_src\lib\__init__.py```
+
